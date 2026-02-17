@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Gestor de Pizzas</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body class="bg-light">
+
+<div class="container mt-4">
+
+<h2 class="text-center">🍕 Gestión de Ventas - {{ fecha_hoy }}</h2>
+
+<div class="row text-center mt-4">
+    <div class="col-md-4">
+        <div class="card shadow p-3">
+            <h5>Ventas Pendientes</h5>
+            <h3>{{ total_dia }}</h3>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow p-3 bg-success text-white">
+            <h5>Ventas Entregadas</h5>
+            <h3>{{ total_entregado }}</h3>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow p-3 bg-dark text-white">
+            <h5>Total del Día</h5>
+            <h3>{{ total_general }}</h3>
+        </div>
+    </div>
+</div>
+
+<hr>
+
+<h4>➕ Nuevo Pedido</h4>
+
+<form action="/agregar" method="POST" class="row g-3">
+
+<div class="col-md-4">
+<input class="form-control form-control-lg" name="cliente" placeholder="Cliente" required>
+</div>
+
+<div class="col-md-4">
+<input class="form-control form-control-lg" name="departamento" placeholder="Departamento" required>
+</div>
+
+<div class="col-md-4">
+<input class="form-control form-control-lg" name="telefono" placeholder="Teléfono">
+</div>
+
+<div class="col-md-4">
+<input class="form-control form-control-lg" name="sabor" placeholder="Sabor" required>
+</div>
+
+<div class="col-md-2">
+<input class="form-control form-control-lg" type="number" name="cantidad" placeholder="Cantidad" required>
+</div>
+
+<div class="col-md-2">
+<input class="form-control form-control-lg" type="number" name="precio" placeholder="Precio" required>
+</div>
+
+<div class="col-md-4">
+<input class="form-control form-control-lg" type="time" name="hora" required>
+</div>
+
+<div class="col-12">
+<button class="btn btn-success btn-lg">Guardar</button>
+<a href="/historial" class="btn btn-secondary btn-lg">Historial</a>
+<a href="/exportar" class="btn btn-dark btn-lg">Exportar Excel</a>
+</div>
+
+</form>
+
+<hr>
+
+<h4>🟡 Pedidos Activos</h4>
+
+<table class="table table-bordered table-striped text-center">
+<tr>
+<th>Hora</th>
+<th>Cliente</th>
+<th>Depto</th>
+<th>Total</th>
+<th>Estado</th>
+<th>Acciones</th>
+</tr>
+
+{% for p in pedidos_activos %}
+<tr>
+<td>{{ p.hora_entrega }}</td>
+<td>{{ p.cliente }}</td>
+<td>{{ p.departamento }}</td>
+<td>${{ "{:,.0f}".format(p.total).replace(",", ".") }}</td>
+
+<td>
+{% if p.estado == "Pendiente" %}
+<span class="badge bg-warning text-dark">Pendiente</span>
+{% elif p.estado == "En preparación" %}
+<span class="badge bg-info text-dark">En preparación</span>
+{% elif p.estado == "En camino" %}
+<span class="badge bg-primary">En camino</span>
+{% endif %}
+</td>
+
+<td>
+{% if p.estado != "En preparación" %}
+<a href="/cambiar_estado/{{ p.id }}/En preparación" class="btn btn-info btn-sm">Preparar</a>
+{% endif %}
+
+{% if p.estado != "En camino" %}
+<a href="/cambiar_estado/{{ p.id }}/En camino" class="btn btn-primary btn-sm">En camino</a>
+{% endif %}
+
+{% if p.estado != "Entregado" %}
+<a href="/cambiar_estado/{{ p.id }}/Entregado" class="btn btn-success btn-sm">Entregar</a>
+{% endif %}
+
+<a href="/eliminar/{{ p.id }}"
+class="btn btn-danger btn-sm"
+onclick="return confirm('¿Seguro que quieres eliminar este pedido?')">
+Eliminar
+</a>
+
+</td>
+</tr>
+{% endfor %}
+</table>
+
+<h4 class="mt-5">🟢 Entregados</h4>
+
+<table class="table table-bordered table-striped text-center">
+<tr>
+<th>Hora</th>
+<th>Cliente</th>
+<th>Depto</th>
+<th>Total</th>
+</tr>
+
+{% for p in pedidos_entregados %}
+<tr>
+<td>{{ p.hora_entrega }}</td>
+<td>{{ p.cliente }}</td>
+<td>{{ p.departamento }}</td>
+<td>${{ "{:,.0f}".format(p.total).replace(",", ".") }}</td>
+</tr>
+{% endfor %}
+</table>
+
+</div>
+</body>
+</html>
