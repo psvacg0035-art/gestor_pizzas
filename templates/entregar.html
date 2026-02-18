@@ -2,56 +2,85 @@
 <html>
 <head>
     <title>Finalizar Pedido</title>
+    <style>
+        body {
+            font-family: Arial;
+            background-color: #f4f6f9;
+            margin: 40px;
+        }
+
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
+            max-width: 500px;
+        }
+
+        select, input {
+            padding: 8px;
+            width: 100%;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #218838;
+        }
+    </style>
 </head>
 <body>
 
-<h2>Finalizar Pedido</h2>
+<div class="card">
+    <h2>Finalizar Pedido</h2>
 
-<p><strong>Cliente:</strong> {{ pedido.cliente }}</p>
-<p><strong>Pizza:</strong> {{ pedido.pizza }}</p>
-<p><strong>Total:</strong> {{ pedido.total }}</p>
+    <p><strong>Cliente:</strong> {{ pedido.cliente }}</p>
+    <p><strong>Pizza:</strong> {{ pedido.pizza }}</p>
+    <p><strong>Total:</strong> ${{ pedido.total }}</p>
 
-<form method="POST">
-    <label>Método de Pago:</label>
-    <select name="metodo_pago" id="metodo_pago" onchange="mostrarCalculadora()">
-        <option value="Transferencia">Transferencia</option>
-        <option value="Efectivo">Efectivo</option>
-    </select>
+    <form method="POST">
+        <label>Método de Pago:</label>
+        <select name="metodo_pago" id="metodo_pago" onchange="mostrarCalculadora()">
+            <option value="Transferencia">Transferencia</option>
+            <option value="Efectivo">Efectivo</option>
+        </select>
 
-    <div id="calculadora" style="display:none; margin-top:15px;">
-        <label>Total de Venta:</label>
-        <input type="number" id="total" value="{{ pedido.total }}" readonly>
+        <div id="calculadora" style="display:none;">
+            <label>Efectivo Recibido:</label>
+            <input type="number" id="recibido" oninput="calcularVuelto()">
 
-        <label>Efectivo Recibido:</label>
-        <input type="number" id="recibido" oninput="calcularVuelto()">
+            <label>Vuelto:</label>
+            <input type="number" id="vuelto" readonly>
+        </div>
 
-        <label>Vuelto:</label>
-        <input type="number" id="vuelto" readonly>
-    </div>
-
-    <br><br>
-    <button type="submit">Confirmar Entrega</button>
-</form>
+        <button type="submit">Confirmar Entrega</button>
+    </form>
+</div>
 
 <script>
 function mostrarCalculadora() {
     var metodo = document.getElementById("metodo_pago").value;
     var calc = document.getElementById("calculadora");
-
-    if (metodo === "Efectivo") {
-        calc.style.display = "block";
-    } else {
-        calc.style.display = "none";
-    }
+    calc.style.display = metodo === "Efectivo" ? "block" : "none";
 }
 
 function calcularVuelto() {
-    var total = parseFloat(document.getElementById("total").value) || 0;
+    var total = parseFloat("{{ pedido.total }}");
     var recibido = parseFloat(document.getElementById("recibido").value) || 0;
-    var vuelto = recibido - total;
-    document.getElementById("vuelto").value = vuelto;
+    document.getElementById("vuelto").value = recibido - total;
 }
 </script>
 
 </body>
 </html>
+

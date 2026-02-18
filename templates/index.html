@@ -2,6 +2,93 @@
 <html>
 <head>
     <title>Gestor de Pizzas</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f9;
+            margin: 40px;
+        }
+
+        h1, h2 {
+            color: #333;
+        }
+
+        form {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        input, select {
+            padding: 8px;
+            margin: 5px 0 15px 0;
+            width: 100%;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            background-color: #ff6b00;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #e65c00;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 40px;
+        }
+
+        th {
+            background-color: #ff6b00;
+            color: white;
+            padding: 12px;
+        }
+
+        td {
+            padding: 10px;
+            text-align: center;
+            border-bottom: 1px solid #eee;
+        }
+
+        tr:hover {
+            background-color: #f2f2f2;
+        }
+
+        .btn-entregar {
+            background-color: #28a745;
+            padding: 6px 10px;
+            color: white;
+            border-radius: 5px;
+            text-decoration: none;
+        }
+
+        .btn-eliminar {
+            background-color: #dc3545;
+            padding: 6px 10px;
+            color: white;
+            border-radius: 5px;
+            text-decoration: none;
+        }
+
+        .estado {
+            font-weight: bold;
+            color: #ff6b00;
+        }
+    </style>
 </head>
 <body>
 
@@ -23,14 +110,12 @@
     <label>Observaciones:</label>
     <input type="text" name="observaciones">
 
-    <button type="submit">Agregar</button>
+    <button type="submit">Agregar Pedido</button>
 </form>
-
-<hr>
 
 <h2>🔥 En Preparación</h2>
 
-<table border="1">
+<table>
 <tr>
     <th>Cliente</th>
     <th>Pizza</th>
@@ -45,22 +130,19 @@
     <td>{{ pedido.cliente }}</td>
     <td>{{ pedido.pizza }}</td>
     <td>{{ pedido.cantidad }}</td>
-    <td>{{ pedido.total }}</td>
-    <td>{{ pedido.estado }}</td>
+    <td>${{ pedido.total }}</td>
+    <td class="estado">{{ pedido.estado }}</td>
     <td>
-        <a href="/entregar/{{ pedido.id }}">✅ Entregar</a>
-        |
-        <a href="/eliminar/{{ pedido.id }}">❌ Eliminar</a>
+        <a class="btn-entregar" href="/entregar/{{ pedido.id }}">Entregar</a>
+        <a class="btn-eliminar" href="/eliminar/{{ pedido.id }}">Eliminar</a>
     </td>
 </tr>
 {% endfor %}
 </table>
 
-<hr>
-
 <h2>📦 Entregados</h2>
 
-<table border="1">
+<table>
 <tr>
     <th>Cliente</th>
     <th>Pizza</th>
@@ -75,7 +157,7 @@
     <td>{{ pedido.cliente }}</td>
     <td>{{ pedido.pizza }}</td>
     <td>{{ pedido.cantidad }}</td>
-    <td>{{ pedido.total }}</td>
+    <td>${{ pedido.total }}</td>
     <td>{{ pedido.observaciones }}</td>
     <td>{{ pedido.metodo_pago }}</td>
 </tr>
@@ -84,4 +166,5 @@
 
 </body>
 </html>
+
 
