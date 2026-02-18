@@ -8,18 +8,27 @@ import io
 
 app = Flask(__name__)
 
-# Configuración base de datos (Render usa DATABASE_URL)
+# ============================
+# 🔴 CONFIGURACIÓN SEGURA POSTGRESQL
+# ============================
+
 database_url = os.getenv("DATABASE_URL")
 
-if database_url and database_url.startswith("postgres://"):
+if not database_url:
+    raise RuntimeError("DATABASE_URL no está configurada en Render")
+
+if database_url.startswith("postgres://"):
     database_url = database_url.replace("postgres://", "postgresql://", 1)
 
-app.config["SQLALCHEMY_DATABASE_URI"] = database_url or "sqlite:///pizzas.db"
+app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db = SQLAlchemy(app)
 
+# ============================
 # MODELO
+# ============================
+
 class Pedido(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     cliente = db.Column(db.String(100))
@@ -38,6 +47,10 @@ class Pedido(db.Model):
 # Crear tablas
 with app.app_context():
     db.create_all()
+
+# ============================
+# RUTAS
+# ============================
 
 @app.route("/")
 def index():
@@ -128,16 +141,18 @@ def eliminar(id):
     return redirect("/")
 
 # ============================
-# 🔵 NUEVO: HISTORIAL COMPLETO
+# HISTORIAL COMPLETO
 # ============================
+
 @app.route("/historial")
 def historial():
     pedidos = Pedido.query.order_by(Pedido.fecha.desc(), Pedido.id.desc()).all()
     return render_template("historial.html", pedidos=pedidos)
 
 # ============================
-# 🔵 NUEVO: EXPORTAR A EXCEL
+# EXPORTAR A EXCEL
 # ============================
+
 @app.route("/exportar_excel")
 def exportar_excel():
     pedidos = Pedido.query.order_by(Pedido.fecha.asc(), Pedido.id.asc()).all()
