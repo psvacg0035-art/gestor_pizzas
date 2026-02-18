@@ -32,6 +32,7 @@ class Pedido(db.Model):
 
 # Crear tablas
 with app.app_context():
+    db.drop_all()
     db.create_all()
 
 
