@@ -54,7 +54,6 @@ def index():
         Pedido.fecha == fecha_hoy
     ).order_by(Pedido.hora_entrega.asc()).all()
 
-    total_pizzas = sum(p.cantidad for p in pedidos_activos)
     total_dia = sum(p.total for p in pedidos_activos)
     total_entregado = sum(p.total for p in pedidos_entregados)
     total_general = total_dia + total_entregado
@@ -62,7 +61,6 @@ def index():
     return render_template("index.html",
                            pedidos_activos=pedidos_activos,
                            pedidos_entregados=pedidos_entregados,
-                           total_pizzas=total_pizzas,
                            total_dia=formato_clp(total_dia),
                            total_entregado=formato_clp(total_entregado),
                            total_general=formato_clp(total_general),
@@ -104,64 +102,12 @@ def entregar(id):
     db.session.commit()
     return redirect("/")
 
-@app.route("/cambiar_estado/<int:id>/<estado>")
-def cambiar_estado(id, estado):
-    pedido = Pedido.query.get(id)
-    pedido.estado = estado
-    db.session.commit()
-    return redirect("/")
-
 @app.route("/eliminar/<int:id>")
 def eliminar(id):
     pedido = Pedido.query.get(id)
     db.session.delete(pedido)
     db.session.commit()
     return redirect("/")
-
-@app.route("/historial", methods=["GET"])
-def historial():
-
-    fecha = request.args.get("fecha")
-    pedidos = []
-    total = 0
-
-    if fecha:
-        pedidos = Pedido.query.filter_by(fecha=fecha).all()
-        total = sum(p.total for p in pedidos)
-
-    return render_template("historial.html",
-                           pedidos=pedidos,
-                           total=formato_clp(total),
-                           fecha=fecha)
-
-@app.route("/exportar")
-def exportar():
-
-    pedidos = Pedido.query.all()
-
-    data = []
-
-    for p in pedidos:
-        data.append({
-            "Fecha": p.fecha,
-            "Cliente": p.cliente,
-            "Departamento": p.departamento,
-            "Teléfono": p.telefono,
-            "Sabor": p.sabor,
-            "Cantidad": p.cantidad,
-            "Precio": p.precio,
-            "Total": p.total,
-            "Hora Entrega": p.hora_entrega,
-            "Estado": p.estado,
-            "Observaciones": p.observaciones,
-            "Método Pago": p.metodo_pago
-        })
-
-    df = pd.DataFrame(data)
-    archivo = "ventas_pizzas.xlsx"
-    df.to_excel(archivo, index=False)
-
-    return send_file(archivo, as_attachment=True)
 
 if __name__ == "__main__":
     app.run(debug=True)
