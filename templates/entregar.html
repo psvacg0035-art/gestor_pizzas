@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Finalizar Pedido</title>
+</head>
+<body>
+
+<h2>Finalizar Pedido</h2>
+
+<p><strong>Cliente:</strong> {{ pedido.cliente }}</p>
+<p><strong>Pizza:</strong> {{ pedido.pizza }}</p>
+<p><strong>Total:</strong> {{ pedido.total }}</p>
+
+<form method="POST">
+    <label>Método de Pago:</label>
+    <select name="metodo_pago" id="metodo_pago" onchange="mostrarCalculadora()">
+        <option value="Transferencia">Transferencia</option>
+        <option value="Efectivo">Efectivo</option>
+    </select>
+
+    <div id="calculadora" style="display:none; margin-top:15px;">
+        <label>Total de Venta:</label>
+        <input type="number" id="total" value="{{ pedido.total }}" readonly>
+
+        <label>Efectivo Recibido:</label>
+        <input type="number" id="recibido" oninput="calcularVuelto()">
+
+        <label>Vuelto:</label>
+        <input type="number" id="vuelto" readonly>
+    </div>
+
+    <br><br>
+    <button type="submit">Confirmar Entrega</button>
+</form>
+
+<script>
+function mostrarCalculadora() {
+    var metodo = document.getElementById("metodo_pago").value;
+    var calc = document.getElementById("calculadora");
+
+    if (metodo === "Efectivo") {
+        calc.style.display = "block";
+    } else {
+        calc.style.display = "none";
+    }
+}
+
+function calcularVuelto() {
+    var total = parseFloat(document.getElementById("total").value) || 0;
+    var recibido = parseFloat(document.getElementById("recibido").value) || 0;
+    var vuelto = recibido - total;
+    document.getElementById("vuelto").value = vuelto;
+}
+</script>
+
+</body>
+</html>
