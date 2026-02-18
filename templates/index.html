@@ -12,27 +12,6 @@
 
 <h2 class="text-center">🍕 Gestión de Ventas - {{ fecha_hoy }}</h2>
 
-<div class="row text-center mt-4">
-    <div class="col-md-4">
-        <div class="card shadow p-3">
-            <h5>Ventas Pendientes</h5>
-            <h3>{{ total_dia }}</h3>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card shadow p-3 bg-success text-white">
-            <h5>Ventas Entregadas</h5>
-            <h3>{{ total_entregado }}</h3>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card shadow p-3 bg-dark text-white">
-            <h5>Total del Día</h5>
-            <h3>{{ total_general }}</h3>
-        </div>
-    </div>
-</div>
-
 <hr>
 
 <h4>➕ Nuevo Pedido</h4>
@@ -40,37 +19,39 @@
 <form action="/agregar" method="POST" class="row g-3">
 
 <div class="col-md-4">
-<input class="form-control form-control-lg" name="cliente" placeholder="Cliente" required>
+<input class="form-control" name="cliente" placeholder="Cliente" required>
 </div>
 
 <div class="col-md-4">
-<input class="form-control form-control-lg" name="departamento" placeholder="Departamento" required>
+<input class="form-control" name="departamento" placeholder="Departamento" required>
 </div>
 
 <div class="col-md-4">
-<input class="form-control form-control-lg" name="telefono" placeholder="Teléfono">
+<input class="form-control" name="telefono" placeholder="Teléfono">
 </div>
 
 <div class="col-md-4">
-<input class="form-control form-control-lg" name="sabor" placeholder="Sabor" required>
+<input class="form-control" name="sabor" placeholder="Sabor" required>
 </div>
 
 <div class="col-md-2">
-<input class="form-control form-control-lg" type="number" name="cantidad" placeholder="Cantidad" required>
+<input class="form-control" type="number" name="cantidad" placeholder="Cantidad" required>
 </div>
 
 <div class="col-md-2">
-<input class="form-control form-control-lg" type="number" name="precio" placeholder="Precio" required>
+<input class="form-control" type="number" name="precio" placeholder="Precio" required>
 </div>
 
 <div class="col-md-4">
-<input class="form-control form-control-lg" type="time" name="hora" required>
+<input class="form-control" type="time" name="hora" required>
+</div>
+
+<div class="col-md-12">
+<input class="form-control" name="observaciones" placeholder="Observaciones">
 </div>
 
 <div class="col-12">
-<button class="btn btn-success btn-lg">Guardar</button>
-<a href="/historial" class="btn btn-secondary btn-lg">Historial</a>
-<a href="/exportar" class="btn btn-dark btn-lg">Exportar Excel</a>
+<button class="btn btn-success">Guardar</button>
 </div>
 
 </form>
@@ -79,13 +60,13 @@
 
 <h4>🟡 Pedidos Activos</h4>
 
-<table class="table table-bordered table-striped text-center">
+<table class="table table-bordered text-center">
 <tr>
 <th>Hora</th>
 <th>Cliente</th>
-<th>Depto</th>
+<th>Sabor</th>
+<th>Observaciones</th>
 <th>Total</th>
-<th>Estado</th>
 <th>Acciones</th>
 </tr>
 
@@ -93,38 +74,13 @@
 <tr>
 <td>{{ p.hora_entrega }}</td>
 <td>{{ p.cliente }}</td>
-<td>{{ p.departamento }}</td>
+<td>{{ p.sabor }}</td>
+<td>{{ p.observaciones }}</td>
 <td>${{ "{:,.0f}".format(p.total).replace(",", ".") }}</td>
-
 <td>
-{% if p.estado == "Pendiente" %}
-<span class="badge bg-warning text-dark">Pendiente</span>
-{% elif p.estado == "En preparación" %}
-<span class="badge bg-info text-dark">En preparación</span>
-{% elif p.estado == "En camino" %}
-<span class="badge bg-primary">En camino</span>
-{% endif %}
-</td>
-
-<td>
-{% if p.estado != "En preparación" %}
-<a href="/cambiar_estado/{{ p.id }}/En preparación" class="btn btn-info btn-sm">Preparar</a>
-{% endif %}
-
-{% if p.estado != "En camino" %}
-<a href="/cambiar_estado/{{ p.id }}/En camino" class="btn btn-primary btn-sm">En camino</a>
-{% endif %}
-
-{% if p.estado != "Entregado" %}
-<a href="/cambiar_estado/{{ p.id }}/Entregado" class="btn btn-success btn-sm">Entregar</a>
-{% endif %}
-
-<a href="/eliminar/{{ p.id }}"
-class="btn btn-danger btn-sm"
-onclick="return confirm('¿Seguro que quieres eliminar este pedido?')">
-Eliminar
-</a>
-
+<button onclick="mostrarPago({{ p.id }}, {{ p.total }})" class="btn btn-success btn-sm">
+Entregar
+</button>
 </td>
 </tr>
 {% endfor %}
@@ -132,11 +88,13 @@ Eliminar
 
 <h4 class="mt-5">🟢 Entregados</h4>
 
-<table class="table table-bordered table-striped text-center">
+<table class="table table-bordered text-center">
 <tr>
 <th>Hora</th>
 <th>Cliente</th>
-<th>Depto</th>
+<th>Sabor</th>
+<th>Observaciones</th>
+<th>Método Pago</th>
 <th>Total</th>
 </tr>
 
@@ -144,12 +102,67 @@ Eliminar
 <tr>
 <td>{{ p.hora_entrega }}</td>
 <td>{{ p.cliente }}</td>
-<td>{{ p.departamento }}</td>
+<td>{{ p.sabor }}</td>
+<td>{{ p.observaciones }}</td>
+<td>{{ p.metodo_pago }}</td>
 <td>${{ "{:,.0f}".format(p.total).replace(",", ".") }}</td>
 </tr>
 {% endfor %}
 </table>
 
 </div>
+
+<!-- MODAL -->
+<div class="modal" tabindex="-1" id="modalPago">
+  <div class="modal-dialog">
+    <div class="modal-content p-3">
+      <h5>Forma de Pago</h5>
+
+      <button class="btn btn-outline-success mb-2" onclick="seleccionarPago('Efectivo')">Efectivo</button>
+      <button class="btn btn-outline-primary mb-2" onclick="seleccionarPago('Transferencia')">Transferencia</button>
+
+      <div id="efectivoSection" style="display:none;">
+          <p>Total: $<span id="totalVenta"></span></p>
+          <input type="number" id="efectivoRecibido" class="form-control" placeholder="Efectivo recibido" oninput="calcularVuelto()">
+          <p class="mt-2">Vuelto: $<span id="vuelto"></span></p>
+      </div>
+
+      <button class="btn btn-success mt-3" onclick="confirmarEntrega()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let pedidoActual = null;
+let totalActual = 0;
+let metodoSeleccionado = "";
+
+function mostrarPago(id, total) {
+    pedidoActual = id;
+    totalActual = total;
+    document.getElementById("totalVenta").innerText = total;
+    document.getElementById("modalPago").style.display = "block";
+}
+
+function seleccionarPago(metodo) {
+    metodoSeleccionado = metodo;
+    if (metodo === "Efectivo") {
+        document.getElementById("efectivoSection").style.display = "block";
+    } else {
+        document.getElementById("efectivoSection").style.display = "none";
+    }
+}
+
+function calcularVuelto() {
+    let recibido = document.getElementById("efectivoRecibido").value;
+    let vuelto = recibido - totalActual;
+    document.getElementById("vuelto").innerText = vuelto >= 0 ? vuelto : 0;
+}
+
+function confirmarEntrega() {
+    window.location.href = "/entregar/" + pedidoActual + "?metodo=" + metodoSeleccionado;
+}
+</script>
+
 </body>
 </html>

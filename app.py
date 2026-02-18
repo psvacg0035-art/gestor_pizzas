@@ -5,11 +5,9 @@ from datetime import datetime
 import locale
 import os
 
-# Configurar moneda chilena
 locale.setlocale(locale.LC_ALL, '')
 
 app = Flask(__name__)
-import os
 
 if os.environ.get("DATABASE_URL"):
     app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL")
@@ -31,6 +29,9 @@ class Pedido(db.Model):
     hora_entrega = db.Column(db.String(10))
     estado = db.Column(db.String(50))
     fecha = db.Column(db.String(20))
+
+    observaciones = db.Column(db.String(300))
+    metodo_pago = db.Column(db.String(50))
 
 with app.app_context():
     db.create_all()
@@ -55,9 +56,7 @@ def index():
 
     total_pizzas = sum(p.cantidad for p in pedidos_activos)
     total_dia = sum(p.total for p in pedidos_activos)
-
     total_entregado = sum(p.total for p in pedidos_entregados)
-
     total_general = total_dia + total_entregado
 
     return render_template("index.html",
@@ -74,32 +73,35 @@ def agregar():
 
     fecha_hoy = datetime.now().strftime("%Y-%m-%d")
 
-    cliente = request.form["cliente"]
-    departamento = request.form["departamento"]
-    telefono = request.form["telefono"]
-    sabor = request.form["sabor"]
-    cantidad = int(request.form["cantidad"])
-    precio = int(request.form["precio"])
-    hora = request.form["hora"]
-
-    total = cantidad * precio
-
     nuevo_pedido = Pedido(
-        cliente=cliente,
-        departamento=departamento,
-        telefono=telefono,
-        sabor=sabor,
-        cantidad=cantidad,
-        precio=precio,
-        total=total,
-        hora_entrega=hora,
+        cliente=request.form["cliente"],
+        departamento=request.form["departamento"],
+        telefono=request.form["telefono"],
+        sabor=request.form["sabor"],
+        cantidad=int(request.form["cantidad"]),
+        precio=int(request.form["precio"]),
+        total=int(request.form["cantidad"]) * int(request.form["precio"]),
+        hora_entrega=request.form["hora"],
         estado="Pendiente",
-        fecha=fecha_hoy
+        fecha=fecha_hoy,
+        observaciones=request.form.get("observaciones"),
+        metodo_pago=""
     )
 
     db.session.add(nuevo_pedido)
     db.session.commit()
 
+    return redirect("/")
+
+@app.route("/entregar/<int:id>")
+def entregar(id):
+    pedido = Pedido.query.get(id)
+
+    metodo = request.args.get("metodo")
+    pedido.metodo_pago = metodo
+    pedido.estado = "Entregado"
+
+    db.session.commit()
     return redirect("/")
 
 @app.route("/cambiar_estado/<int:id>/<estado>")
@@ -120,7 +122,6 @@ def eliminar(id):
 def historial():
 
     fecha = request.args.get("fecha")
-
     pedidos = []
     total = 0
 
@@ -151,7 +152,9 @@ def exportar():
             "Precio": p.precio,
             "Total": p.total,
             "Hora Entrega": p.hora_entrega,
-            "Estado": p.estado
+            "Estado": p.estado,
+            "Observaciones": p.observaciones,
+            "Método Pago": p.metodo_pago
         })
 
     df = pd.DataFrame(data)
