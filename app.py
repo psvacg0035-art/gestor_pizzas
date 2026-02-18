@@ -1,7 +1,10 @@
-from flask import Flask, render_template, request, redirect
+from flask import Flask, render_template, request, redirect, send_file
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 import os
+from openpyxl import Workbook
+from openpyxl.utils import get_column_letter
+import io
 
 app = Flask(__name__)
 
@@ -29,7 +32,6 @@ class Pedido(db.Model):
 
 # Crear tablas
 with app.app_context():
-    db.drop_all()
     db.create_all()
 
 
@@ -120,6 +122,77 @@ def eliminar(id):
         db.session.delete(pedido)
         db.session.commit()
     return redirect("/")
+
+# ============================
+# 🔵 NUEVO: HISTORIAL COMPLETO
+# ============================
+@app.route("/historial")
+def historial():
+    pedidos = Pedido.query.order_by(Pedido.fecha.desc(), Pedido.id.desc()).all()
+    return render_template("historial.html", pedidos=pedidos)
+
+# ============================
+# 🔵 NUEVO: EXPORTAR A EXCEL
+# ============================
+@app.route("/exportar_excel")
+def exportar_excel():
+    pedidos = Pedido.query.order_by(Pedido.fecha.asc(), Pedido.id.asc()).all()
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Historial Pedidos"
+
+    encabezados = [
+        "ID",
+        "Fecha",
+        "Cliente",
+        "Departamento",
+        "Telefono",
+        "Sabor",
+        "Cantidad",
+        "Precio",
+        "Total",
+        "Estado",
+        "Observaciones",
+        "Metodo Pago"
+    ]
+
+    ws.append(encabezados)
+
+    for p in pedidos:
+        ws.append([
+            p.id,
+            p.fecha,
+            p.cliente,
+            p.departamento,
+            p.telefono,
+            p.sabor,
+            p.cantidad,
+            p.precio,
+            p.total,
+            p.estado,
+            p.observaciones or "",
+            p.metodo_pago or ""
+        ])
+
+    # Ajustar ancho automático
+    for col in ws.columns:
+        max_length = 0
+        col_letter = get_column_letter(col[0].column)
+        for cell in col:
+            if cell.value:
+                max_length = max(max_length, len(str(cell.value)))
+        ws.column_dimensions[col_letter].width = max_length + 2
+
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    return send_file(
+        output,
+        download_name="historial_pedidos.xlsx",
+        as_attachment=True
+    )
 
 if __name__ == "__main__":
     app.run(debug=True)
