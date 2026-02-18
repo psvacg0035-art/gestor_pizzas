@@ -2,153 +2,254 @@
 <html>
 <head>
     <title>Gestor de Pizzas</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <style>
-        body {
-            margin: 0;
-            font-family: 'Segoe UI', sans-serif;
-            background: #f2f4f8;
-        }
-
-        .container {
-            max-width: 1100px;
-            margin: auto;
-            padding: 20px;
-        }
-
-        h1 {
-            text-align: center;
-            color: #ff6b00;
-        }
-
-        .card {
-            background: white;
-            padding: 20px;
-            border-radius: 15px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
-            margin-bottom: 25px;
-        }
-
-        input, select {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 12px;
-            border-radius: 8px;
-            border: 1px solid #ddd;
-        }
-
-        button {
-            background: #ff6b00;
-            color: white;
-            padding: 10px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            width: 100%;
-        }
-
-        button:hover {
-            background: #e85d00;
-        }
-
-        .pedido {
-            border-bottom: 1px solid #eee;
-            padding: 12px 0;
-        }
-
-        .acciones button {
-            margin-top: 5px;
-        }
-
-        .entregado {
-            background: #e8f5e9;
-        }
-
-        @media (max-width: 768px) {
-            .pedido {
-                font-size: 14px;
-            }
-        }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
-<body>
 
-<div class="container">
+<body class="bg-light">
 
-<h1>🍕 Gestor de Pizzas</h1>
+<div class="container mt-4">
 
-<div class="card">
-    <h3>Nuevo Pedido</h3>
-    <form action="/agregar" method="POST">
-        <input type="text" name="cliente" placeholder="Cliente" required>
-        <input type="text" name="departamento" placeholder="Departamento">
-        <input type="text" name="pizza" placeholder="Tipo de Pizza" required>
-        <input type="number" name="cantidad" placeholder="Cantidad" required>
-        <input type="number" step="0.01" name="precio" placeholder="Precio" required>
-        <input type="text" name="observaciones" placeholder="Observaciones">
-        <button type="submit">Agregar Pedido</button>
-    </form>
-</div>
+<h2 class="text-center">🍕 Gestión de Ventas - {{ fecha_hoy }}</h2>
 
-<div class="card">
-    <h3>🔥 En Preparación</h3>
-
-    {% for pedido in pedidos %}
-    <div class="pedido">
-        <strong>{{ pedido.cliente }}</strong> ({{ pedido.departamento }})<br>
-        {{ pedido.pizza }} x{{ pedido.cantidad }} — ${{ pedido.total }}<br>
-        <small>{{ pedido.observaciones }}</small>
-
-        <div class="acciones">
-            <form action="/entregar/{{ pedido.id }}" method="POST">
-                <select name="metodo_pago" onchange="mostrarVuelto(this, {{ pedido.total }})">
-                    <option value="Transferencia">Transferencia</option>
-                    <option value="Efectivo">Efectivo</option>
-                </select>
-
-                <div class="vuelto-box" style="display:none;">
-                    <input type="number" placeholder="Efectivo recibido"
-                        oninput="calcularVuelto(this, {{ pedido.total }})">
-                    <input type="text" placeholder="Vuelto" readonly>
-                </div>
-
-                <button type="submit">Entregar</button>
-            </form>
-
-            <a href="/eliminar/{{ pedido.id }}">
-                <button style="background:#dc3545;">Eliminar</button>
-            </a>
+<div class="row text-center mt-4">
+    <div class="col-md-4">
+        <div class="card shadow p-3">
+            <h5>Ventas Pendientes</h5>
+            <h3>{{ total_dia }}</h3>
         </div>
     </div>
-    {% endfor %}
-</div>
-
-<div class="card entregado">
-    <h3>📦 Entregados</h3>
-
-    {% for pedido in entregados %}
-    <div class="pedido">
-        <strong>{{ pedido.cliente }}</strong> ({{ pedido.departamento }})<br>
-        {{ pedido.pizza }} x{{ pedido.cantidad }} — ${{ pedido.total }}<br>
-        <small>{{ pedido.observaciones }}</small><br>
-        <small>Método: {{ pedido.metodo_pago }}</small>
+    <div class="col-md-4">
+        <div class="card shadow p-3 bg-success text-white">
+            <h5>Ventas Entregadas</h5>
+            <h3>{{ total_entregado }}</h3>
+        </div>
     </div>
-    {% endfor %}
+    <div class="col-md-4">
+        <div class="card shadow p-3 bg-dark text-white">
+            <h5>Total del Día</h5>
+            <h3>{{ total_general }}</h3>
+        </div>
+    </div>
+</div>
+
+<hr>
+
+<h4>➕ Nuevo Pedido</h4>
+
+<form action="/agregar" method="POST" class="row g-3">
+
+<div class="col-md-4">
+<input class="form-control form-control-lg" name="cliente" placeholder="Cliente" required>
+</div>
+
+<div class="col-md-4">
+<input class="form-control form-control-lg" name="departamento" placeholder="Departamento" required>
+</div>
+
+<div class="col-md-4">
+<input class="form-control form-control-lg" name="telefono" placeholder="Teléfono">
+</div>
+
+<div class="col-md-4">
+<input class="form-control form-control-lg" name="sabor" placeholder="Sabor" required>
+</div>
+
+<div class="col-md-2">
+<input class="form-control form-control-lg" type="number" name="cantidad" placeholder="Cantidad" required>
+</div>
+
+<div class="col-md-2">
+<input class="form-control form-control-lg" type="number" name="precio" placeholder="Precio" required>
+</div>
+
+<div class="col-md-4">
+<input class="form-control form-control-lg" type="time" name="hora" required>
+</div>
+
+<div class="col-12">
+<textarea class="form-control form-control-lg" name="observaciones" placeholder="Observaciones (sin cebolla, extra queso, etc.)"></textarea>
+</div>
+
+<div class="col-12">
+<button class="btn btn-success btn-lg">Guardar</button>
+<a href="/historial" class="btn btn-secondary btn-lg">Historial</a>
+<a href="/exportar" class="btn btn-dark btn-lg">Exportar Excel</a>
+</div>
+
+</form>
+
+<hr>
+
+<h4>🟡 Pedidos Activos</h4>
+
+<div class="table-responsive">
+<table class="table table-bordered table-striped text-center align-middle">
+<tr>
+<th>Hora</th>
+<th>Cliente</th>
+<th>Depto</th>
+<th>Sabor</th>
+<th>Total</th>
+<th>Estado</th>
+<th>Acciones</th>
+</tr>
+
+{% for p in pedidos_activos %}
+<tr>
+<td>{{ p.hora_entrega }}</td>
+<td>{{ p.cliente }}</td>
+<td>{{ p.departamento }}</td>
+<td>{{ p.sabor }}</td>
+<td>${{ "{:,.0f}".format(p.total).replace(",", ".") }}</td>
+
+<td>
+{% if p.estado == "Pendiente" %}
+<span class="badge bg-warning text-dark">Pendiente</span>
+{% elif p.estado == "En preparación" %}
+<span class="badge bg-info text-dark">En preparación</span>
+{% elif p.estado == "En camino" %}
+<span class="badge bg-primary">En camino</span>
+{% endif %}
+</td>
+
+<td>
+
+{% if p.estado != "En preparación" %}
+<a href="/cambiar_estado/{{ p.id }}/En preparación" class="btn btn-info btn-sm">Preparar</a>
+{% endif %}
+
+{% if p.estado != "En camino" %}
+<a href="/cambiar_estado/{{ p.id }}/En camino" class="btn btn-primary btn-sm">En camino</a>
+{% endif %}
+
+{% if p.estado != "Entregado" %}
+<button class="btn btn-success btn-sm"
+onclick="mostrarPago({{ p.id }}, {{ p.total }})">
+Entregar
+</button>
+{% endif %}
+
+<a href="/eliminar/{{ p.id }}"
+class="btn btn-danger btn-sm"
+onclick="return confirm('¿Seguro que quieres eliminar este pedido?')">
+Eliminar
+</a>
+
+</td>
+</tr>
+{% endfor %}
+</table>
+</div>
+
+<hr>
+
+<h4 class="mt-5">🟢 Entregados</h4>
+
+<div class="table-responsive">
+<table class="table table-bordered table-striped text-center align-middle">
+<tr>
+<th>Hora</th>
+<th>Cliente</th>
+<th>Depto</th>
+<th>Sabor</th>
+<th>Observaciones</th>
+<th>Método Pago</th>
+<th>Total</th>
+</tr>
+
+{% for p in pedidos_entregados %}
+<tr>
+<td>{{ p.hora_entrega }}</td>
+<td>{{ p.cliente }}</td>
+<td>{{ p.departamento }}</td>
+<td>{{ p.sabor }}</td>
+<td>{{ p.observaciones }}</td>
+<td>{{ p.metodo_pago }}</td>
+<td>${{ "{:,.0f}".format(p.total).replace(",", ".") }}</td>
+</tr>
+{% endfor %}
+</table>
 </div>
 
 </div>
+
+<!-- MODAL PAGO -->
+<div class="modal fade" id="modalPago" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+
+      <form method="POST" action="/entregar">
+
+      <div class="modal-header">
+        <h5 class="modal-title">Finalizar Venta</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+
+        <input type="hidden" name="pedido_id" id="pedido_id">
+
+        <div class="mb-3">
+          <label>Total Venta</label>
+          <input type="text" id="total_venta" class="form-control" readonly>
+        </div>
+
+        <div class="mb-3">
+          <label>Método de Pago</label>
+          <select name="metodo_pago" id="metodo_pago" class="form-select" onchange="mostrarEfectivo()" required>
+            <option value="">Seleccionar</option>
+            <option value="Efectivo">Efectivo</option>
+            <option value="Transferencia">Transferencia</option>
+          </select>
+        </div>
+
+        <div id="efectivo_section" style="display:none;">
+            <div class="mb-3">
+                <label>Efectivo Recibido</label>
+                <input type="number" id="efectivo_recibido" class="form-control" oninput="calcularVuelto()">
+            </div>
+
+            <div class="mb-3">
+                <label>Vuelto</label>
+                <input type="text" id="vuelto" class="form-control" readonly>
+            </div>
+        </div>
+
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-success">Confirmar</button>
+      </div>
+
+      </form>
+
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-function mostrarVuelto(select, total) {
-    const box = select.parentElement.querySelector(".vuelto-box");
-    box.style.display = select.value === "Efectivo" ? "block" : "none";
+let totalActual = 0;
+
+function mostrarPago(id, total) {
+    totalActual = total;
+    document.getElementById("pedido_id").value = id;
+    document.getElementById("total_venta").value = "$" + total;
+    new bootstrap.Modal(document.getElementById('modalPago')).show();
 }
 
-function calcularVuelto(input, total) {
-    const recibido = parseFloat(input.value) || 0;
-    const vuelto = recibido - total;
-    input.parentElement.querySelector("input[readonly]").value = vuelto;
+function mostrarEfectivo() {
+    let metodo = document.getElementById("metodo_pago").value;
+    document.getElementById("efectivo_section").style.display =
+        metodo === "Efectivo" ? "block" : "none";
+}
+
+function calcularVuelto() {
+    let recibido = parseFloat(document.getElementById("efectivo_recibido").value) || 0;
+    let vuelto = recibido - totalActual;
+    document.getElementById("vuelto").value = "$" + vuelto;
 }
 </script>
 
