@@ -34,6 +34,7 @@ class Pedido(db.Model):
     metodo_pago = db.Column(db.String(50))
 
 with app.app_context():
+    db.drop_all()
     db.create_all()
 
 def formato_clp(valor):
