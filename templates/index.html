@@ -54,9 +54,16 @@
 <input class="form-control form-control-lg" name="telefono" placeholder="Teléfono">
 </div>
 
+{% for campo in campos %}
 <div class="col-md-4">
-<input class="form-control form-control-lg" name="sabor" placeholder="Sabor" required>
+<select class="form-control form-control-lg" name="campo_{{ campo.id }}" required>
+<option value="">Seleccionar {{ campo.nombre }}</option>
+{% for opcion in campo.opciones %}
+<option value="{{ opcion.nombre }}">{{ opcion.nombre }}</option>
+{% endfor %}
+</select>
 </div>
+{% endfor %}
 
 <div class="col-md-2">
 <input class="form-control form-control-lg" type="number" name="cantidad" placeholder="Cantidad" required>

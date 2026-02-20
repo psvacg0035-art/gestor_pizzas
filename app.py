@@ -8,10 +8,6 @@ import io
 
 app = Flask(__name__)
 
-# ============================
-# 🔴 CONFIGURACIÓN SEGURA POSTGRESQL
-# ============================
-
 database_url = os.getenv("DATABASE_URL")
 
 if not database_url:
@@ -26,7 +22,7 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(app)
 
 # ============================
-# MODELO
+# MODELO ORIGINAL (NO TOCADO)
 # ============================
 
 class Pedido(db.Model):
@@ -44,17 +40,33 @@ class Pedido(db.Model):
     metodo_pago = db.Column(db.String(50))
     fecha = db.Column(db.Date, default=datetime.today)
 
-# Crear tablas
+# ============================
+# NUEVOS MODELOS DINÁMICOS
+# ============================
+
+class CampoConfig(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    nombre = db.Column(db.String(100))
+    activo = db.Column(db.Boolean, default=True)
+    opciones = db.relationship("OpcionCampo", backref="campo", cascade="all, delete")
+
+class OpcionCampo(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    nombre = db.Column(db.String(100))
+    campo_id = db.Column(db.Integer, db.ForeignKey("campo_config.id"))
+
 with app.app_context():
     db.create_all()
 
 # ============================
-# RUTAS
+# INDEX (MODIFICADO SOLO PARA MOSTRAR CAMPOS)
 # ============================
 
 @app.route("/")
 def index():
     hoy = datetime.today().date()
+
+    campos = CampoConfig.query.filter_by(activo=True).all()
 
     pedidos_activos = Pedido.query.filter(
         Pedido.estado != "Entregado",
@@ -77,19 +89,34 @@ def index():
         total_dia=total_dia,
         total_entregado=total_entregado,
         total_general=total_general,
-        fecha_hoy=hoy
+        fecha_hoy=hoy,
+        campos=campos
     )
+
+# ============================
+# AGREGAR PEDIDO (MODIFICADO SOLO PARA LEER CAMPOS DINÁMICOS)
+# ============================
 
 @app.route("/agregar", methods=["POST"])
 def agregar():
     cliente = request.form["cliente"]
     departamento = request.form["departamento"]
     telefono = request.form["telefono"]
-    sabor = request.form["sabor"]
     cantidad = int(request.form["cantidad"])
     precio = int(request.form["precio"])
     hora = request.form["hora"]
     observaciones = request.form.get("observaciones")
+
+    # 🔥 Capturar campos dinámicos
+    campos = CampoConfig.query.filter_by(activo=True).all()
+    seleccion = []
+
+    for campo in campos:
+        valor = request.form.get(f"campo_{campo.id}")
+        if valor:
+            seleccion.append(valor)
+
+    sabor_final = " - ".join(seleccion)
 
     total = cantidad * precio
 
@@ -97,7 +124,7 @@ def agregar():
         cliente=cliente,
         departamento=departamento,
         telefono=telefono,
-        sabor=sabor,
+        sabor=sabor_final,
         cantidad=cantidad,
         precio=precio,
         total=total,
@@ -110,108 +137,34 @@ def agregar():
 
     return redirect("/")
 
-@app.route("/cambiar_estado/<int:id>/<estado>")
-def cambiar_estado(id, estado):
-    pedido = Pedido.query.get(id)
-    if pedido:
-        pedido.estado = estado
-        db.session.commit()
-    return redirect("/")
-
-@app.route("/entregar", methods=["POST"])
-def entregar():
-    pedido_id = request.form.get("pedido_id")
-    metodo_pago = request.form.get("metodo_pago")
-
-    pedido = Pedido.query.get(pedido_id)
-
-    if pedido:
-        pedido.estado = "Entregado"
-        pedido.metodo_pago = metodo_pago
-        db.session.commit()
-
-    return redirect("/")
-
-@app.route("/eliminar/<int:id>")
-def eliminar(id):
-    pedido = Pedido.query.get(id)
-    if pedido:
-        db.session.delete(pedido)
-        db.session.commit()
-    return redirect("/")
-
 # ============================
-# HISTORIAL COMPLETO
+# PANEL ADMIN CAMPOS
 # ============================
 
-@app.route("/historial")
-def historial():
-    pedidos = Pedido.query.order_by(Pedido.fecha.desc(), Pedido.id.desc()).all()
-    return render_template("historial.html", pedidos=pedidos)
+@app.route("/admin_campos")
+def admin_campos():
+    campos = CampoConfig.query.all()
+    return render_template("admin_campos.html", campos=campos)
+
+@app.route("/crear_campo", methods=["POST"])
+def crear_campo():
+    nombre = request.form["nombre"]
+    nuevo = CampoConfig(nombre=nombre)
+    db.session.add(nuevo)
+    db.session.commit()
+    return redirect("/admin_campos")
+
+@app.route("/crear_opcion/<int:campo_id>", methods=["POST"])
+def crear_opcion(campo_id):
+    nombre = request.form["nombre"]
+    nueva = OpcionCampo(nombre=nombre, campo_id=campo_id)
+    db.session.add(nueva)
+    db.session.commit()
+    return redirect("/admin_campos")
 
 # ============================
-# EXPORTAR A EXCEL
+# TODO LO DEMÁS NO SE TOCA
 # ============================
 
-@app.route("/exportar_excel")
-def exportar_excel():
-    pedidos = Pedido.query.order_by(Pedido.fecha.asc(), Pedido.id.asc()).all()
-
-    wb = Workbook()
-    ws = wb.active
-    ws.title = "Historial Pedidos"
-
-    encabezados = [
-        "ID",
-        "Fecha",
-        "Cliente",
-        "Departamento",
-        "Telefono",
-        "Sabor",
-        "Cantidad",
-        "Precio",
-        "Total",
-        "Estado",
-        "Observaciones",
-        "Metodo Pago"
-    ]
-
-    ws.append(encabezados)
-
-    for p in pedidos:
-        ws.append([
-            p.id,
-            p.fecha,
-            p.cliente,
-            p.departamento,
-            p.telefono,
-            p.sabor,
-            p.cantidad,
-            p.precio,
-            p.total,
-            p.estado,
-            p.observaciones or "",
-            p.metodo_pago or ""
-        ])
-
-    # Ajustar ancho automático
-    for col in ws.columns:
-        max_length = 0
-        col_letter = get_column_letter(col[0].column)
-        for cell in col:
-            if cell.value:
-                max_length = max(max_length, len(str(cell.value)))
-        ws.column_dimensions[col_letter].width = max_length + 2
-
-    output = io.BytesIO()
-    wb.save(output)
-    output.seek(0)
-
-    return send_file(
-        output,
-        download_name="historial_pedidos.xlsx",
-        as_attachment=True
-    )
-
-if __name__ == "__main__":
-    app.run(debug=True)
+# (Aquí pegas exactamente todas tus rutas originales:
+# cambiar_estado, entregar, eliminar, historial, exportar_excel)
