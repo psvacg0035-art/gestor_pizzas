@@ -45,7 +45,7 @@ class Pedido(db.Model):
     fecha = db.Column(db.Date, default=datetime.today)
 
 # ============================
-# 🆕 NUEVO MODELO PARA CONFIGURAR CAMPOS
+# 🆕 MODELO PARA CONFIGURAR NOMBRE Y VISIBILIDAD
 # ============================
 
 class ConfigCampo(db.Model):
@@ -55,16 +55,17 @@ class ConfigCampo(db.Model):
     activo = db.Column(db.Boolean, default=True)
 
 # ============================
-# Crear tablas y cargar configuración inicial
+# Crear tablas
 # ============================
 
 with app.app_context():
     db.create_all()
 
+    # Crear configuración inicial si no existe
     campos_base = [
         ("cliente", "Cliente"),
         ("departamento", "Departamento"),
-        ("telefono", "Telefono"),
+        ("telefono", "Teléfono"),
         ("sabor", "Sabor"),
         ("cantidad", "Cantidad"),
         ("precio", "Precio"),
@@ -73,8 +74,7 @@ with app.app_context():
     for clave, nombre in campos_base:
         existe = ConfigCampo.query.filter_by(clave=clave).first()
         if not existe:
-            nuevo = ConfigCampo(clave=clave, nombre_mostrar=nombre)
-            db.session.add(nuevo)
+            db.session.add(ConfigCampo(clave=clave, nombre_mostrar=nombre))
 
     db.session.commit()
 
@@ -100,7 +100,7 @@ def index():
     total_entregado = sum(p.total for p in pedidos_entregados)
     total_general = total_dia + total_entregado
 
-    # 🆕 AGREGADO: enviar configuración a la vista
+    # 🆕 enviar configuración al template
     config_campos = ConfigCampo.query.all()
     config_dict = {c.clave: c for c in config_campos}
 
@@ -112,7 +112,7 @@ def index():
         total_entregado=total_entregado,
         total_general=total_general,
         fecha_hoy=hoy,
-        config=config_dict   # 🆕 agregado
+        config=config_dict  # agregado
     )
 
 @app.route("/agregar", methods=["POST"])
@@ -176,6 +176,33 @@ def eliminar(id):
     return redirect("/")
 
 # ============================
+# 🆕 RUTAS PARA EDITAR NOMBRE Y OCULTAR
+# ============================
+
+@app.route("/actualizar_nombre_campo", methods=["POST"])
+def actualizar_nombre_campo():
+    clave = request.form.get("clave")
+    nuevo_nombre = request.form.get("nuevo_nombre")
+
+    campo = ConfigCampo.query.filter_by(clave=clave).first()
+    if campo:
+        campo.nombre_mostrar = nuevo_nombre
+        db.session.commit()
+
+    return "OK"
+
+@app.route("/toggle_campo", methods=["POST"])
+def toggle_campo():
+    clave = request.form.get("clave")
+
+    campo = ConfigCampo.query.filter_by(clave=clave).first()
+    if campo:
+        campo.activo = not campo.activo
+        db.session.commit()
+
+    return "OK"
+
+# ============================
 # HISTORIAL COMPLETO
 # ============================
 
@@ -197,35 +224,18 @@ def exportar_excel():
     ws.title = "Historial Pedidos"
 
     encabezados = [
-        "ID",
-        "Fecha",
-        "Cliente",
-        "Departamento",
-        "Telefono",
-        "Sabor",
-        "Cantidad",
-        "Precio",
-        "Total",
-        "Estado",
-        "Observaciones",
-        "Metodo Pago"
+        "ID","Fecha","Cliente","Departamento","Telefono",
+        "Sabor","Cantidad","Precio","Total","Estado",
+        "Observaciones","Metodo Pago"
     ]
 
     ws.append(encabezados)
 
     for p in pedidos:
         ws.append([
-            p.id,
-            p.fecha,
-            p.cliente,
-            p.departamento,
-            p.telefono,
-            p.sabor,
-            p.cantidad,
-            p.precio,
-            p.total,
-            p.estado,
-            p.observaciones or "",
+            p.id,p.fecha,p.cliente,p.departamento,
+            p.telefono,p.sabor,p.cantidad,p.precio,
+            p.total,p.estado,p.observaciones or "",
             p.metodo_pago or ""
         ])
 
@@ -241,30 +251,7 @@ def exportar_excel():
     wb.save(output)
     output.seek(0)
 
-    return send_file(
-        output,
-        download_name="historial_pedidos.xlsx",
-        as_attachment=True
-    )
+    return send_file(output, download_name="historial_pedidos.xlsx", as_attachment=True)
 
-# ============================
-# 🆕 PANEL ADMINISTRAR CAMPOS
-# ============================
-
-@app.route("/admin_campos")
-def admin_campos():
-    campos = ConfigCampo.query.all()
-    return render_template("admin_campos.html", campos=campos)
-
-@app.route("/editar_campo/<int:id>", methods=["POST"])
-def editar_campo(id):
-    campo = ConfigCampo.query.get(id)
-    if campo:
-        campo.nombre_mostrar = request.form["nombre"]
-        campo.activo = "activo" in request.form
-        db.session.commit()
-    return redirect("/admin_campos")
-
-# 🔴 NO MODIFICADO
 if __name__ == "__main__":
     app.run(debug=True)
